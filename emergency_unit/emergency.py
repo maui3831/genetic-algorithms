@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 
 class EmergencyUnitGA:
     """
@@ -8,7 +8,8 @@ class EmergencyUnitGA:
     """
     
     def __init__(self, city_size: int = 10, population_size: int = 50, 
-                 mutation_rate: float = 0.1, crossover_rate: float = 0.8):
+                 mutation_rate: float = 0.1, crossover_rate: float = 0.8,
+                 custom_emergency_frequency: Optional[np.ndarray] = None):
         """
         Initialize the GA parameters
         
@@ -17,15 +18,18 @@ class EmergencyUnitGA:
             population_size: Number of individuals in population
             mutation_rate: Probability of mutation
             crossover_rate: Probability of crossover
+            custom_emergency_frequency: Custom emergency frequency map (optional)
         """
         self.city_size = city_size
         self.population_size = population_size
         self.mutation_rate = mutation_rate
         self.crossover_rate = crossover_rate
         
-        # Initialize emergency frequency map (10x10 grid)
-        # Higher values indicate more frequent emergencies
-        self.emergency_frequency = self._generate_emergency_frequency()
+        # Initialize emergency frequency map
+        if custom_emergency_frequency is not None:
+            self.emergency_frequency = custom_emergency_frequency
+        else:
+            self.emergency_frequency = self._generate_emergency_frequency()
         
         # Track evolution history
         self.generation_history = []
@@ -49,6 +53,18 @@ class EmergencyUnitGA:
         # Normalize to reasonable values
         freq_map = freq_map / np.max(freq_map) * 10
         return freq_map
+    
+    def set_emergency_frequency(self, frequency_map: np.ndarray):
+        """
+        Set custom emergency frequency map
+        
+        Args:
+            frequency_map: 2D numpy array with emergency frequencies (1-10 scale)
+        """
+        if frequency_map.shape != (self.city_size, self.city_size):
+            raise ValueError(f"Frequency map must be {self.city_size}x{self.city_size}")
+        
+        self.emergency_frequency = frequency_map.copy()
     
     def _calculate_response_time(self, distance: float) -> float:
         """

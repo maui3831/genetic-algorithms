@@ -27,24 +27,134 @@ mutation_rate = st.sidebar.slider("Mutation Rate", 0.05, 0.3, 0.1, 0.05)
 crossover_rate = st.sidebar.slider("Crossover Rate", 0.5, 1.0, 0.8, 0.1)
 city_size = st.sidebar.slider("City Grid Size", 5, 15, 10, 1)
 
-# Run button
-run_optimization = st.sidebar.button("🚀 Run Optimization", type="primary")
+# Emergency frequency input method
+st.sidebar.header("📊 Emergency Frequency Setup")
+input_method = st.sidebar.radio(
+    "Choose input method:",
+    ["Manual Entry", "Random Generation"],
+    help="Select how to set emergency frequencies for each location"
+)
 
 # Initialize session state
 if 'results' not in st.session_state:
     st.session_state.results = None
 if 'ga' not in st.session_state:
     st.session_state.ga = None
+if 'emergency_frequency' not in st.session_state:
+    st.session_state.emergency_frequency = None
+if f'manual_freq_{city_size}' not in st.session_state:
+    st.session_state[f'manual_freq_{city_size}'] = np.ones((city_size, city_size)) * 5.0
+
+# Manual frequency input
+if input_method == "Manual Entry":
+    st.markdown('<h2 class="section-header">📝 Manual Emergency Frequency Input</h2>', unsafe_allow_html=True)
+    st.markdown("Enter emergency frequency scores (1-10) for each city location:")
+    
+    # Create input grid
+    freq_data = st.session_state[f'manual_freq_{city_size}']
+    
+    # Display input grid
+    st.markdown(f"**{city_size}×{city_size} City Grid - Emergency Frequency Input**")
+    
+    cols = st.columns(city_size)
+    
+    # Create input fields for each cell
+    for j in range(city_size):
+        with cols[j]:
+            st.markdown(f"**Col {j}**")
+            for i in range(city_size):
+                key = f"freq_{i}_{j}_{city_size}"
+                value = st.number_input(
+                    f"({i},{j})",
+                    min_value=1.0,
+                    max_value=10.0,
+                    value=float(freq_data[i, j]),
+                    step=0.1,
+                    key=key,
+                    help=f"Emergency frequency for location ({i},{j})"
+                )
+                freq_data[i, j] = value
+    
+    # Update session state
+    st.session_state[f'manual_freq_{city_size}'] = freq_data
+    st.session_state.emergency_frequency = freq_data.copy()
+    
+    # Quick fill options
+    st.markdown("**Quick Fill Options:**")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("Fill All with 5", help="Set all locations to moderate frequency (5)"):
+            st.session_state[f'manual_freq_{city_size}'] = np.ones((city_size, city_size)) * 5.0
+            st.rerun()
+    
+    with col2:
+        if st.button("Random Fill", help="Fill with random values (1-10)"):
+            st.session_state[f'manual_freq_{city_size}'] = np.random.uniform(1, 10, (city_size, city_size))
+            st.rerun()
+    
+    with col3:
+        if st.button("High Center", help="Higher frequencies in center, lower at edges"):
+            center = city_size // 2
+            for i in range(city_size):
+                for j in range(city_size):
+                    dist_from_center = abs(i - center) + abs(j - center)
+                    freq = max(1, 10 - dist_from_center * 1.5)
+                    st.session_state[f'manual_freq_{city_size}'][i, j] = freq
+            st.rerun()
+    
+    with col4:
+        if st.button("Corner Hotspots", help="High frequencies at corners"):
+            freq_map = np.ones((city_size, city_size)) * 3.0
+            # Add corner hotspots
+            corners = [(0, 0), (0, city_size-1), (city_size-1, 0), (city_size-1, city_size-1)]
+            for x, y in corners:
+                freq_map[x, y] = 9.0
+                # Add gradient around corners
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < city_size and 0 <= ny < city_size and (dx != 0 or dy != 0):
+                            freq_map[nx, ny] = max(freq_map[nx, ny], 6.0)
+            st.session_state[f'manual_freq_{city_size}'] = freq_map
+            st.rerun()
+    
+    # Display current frequency map
+    st.markdown("**Current Emergency Frequency Distribution:**")
+    fig_preview = px.imshow(
+        st.session_state[f'manual_freq_{city_size}'],
+        labels=dict(x="X Coordinate", y="Y Coordinate", color="Emergency Frequency"),
+        x=list(range(city_size)),
+        y=list(range(city_size)),
+        color_continuous_scale="Reds",
+        zmin=1,
+        zmax=10
+    )
+    fig_preview.update_layout(height=400)
+    st.plotly_chart(fig_preview, use_container_width=True)
+
+else:
+    # Random generation mode
+    st.session_state.emergency_frequency = None
+
+# Run button
+run_optimization = st.sidebar.button("🚀 Run Optimization", type="primary")
 
 # Run optimization when button is clicked
 if run_optimization:
     with st.spinner("🔄 Running Genetic Algorithm Optimization..."):
         # Initialize GA
+        if input_method == "Manual Entry":
+            custom_freq = st.session_state.emergency_frequency
+        else:
+            custom_freq = None
+            
         st.session_state.ga = EmergencyUnitGA(
             city_size=city_size,
             population_size=population_size,
             mutation_rate=mutation_rate,
-            crossover_rate=crossover_rate
+            crossover_rate=crossover_rate,
+            custom_emergency_frequency=custom_freq
         )
         
         # Run evolution
@@ -115,7 +225,8 @@ if st.session_state.results is not None:
             yaxis_title='Cost Value',
             hovermode='x unified',
             template='plotly_white',
-            height=500
+            height=500,
+            title="Genetic Algorithm Convergence - Cost vs Generation"
         )
         
         fig_evolution.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
@@ -268,12 +379,29 @@ if st.session_state.results is not None:
         for i, (stat, value) in enumerate(freq_stats.items()):
             with [col1, col2, col3, col4][i]:
                 st.metric(stat, f"{value:.2f}")
+        
+        # Show frequency distribution table
+        st.markdown("**Detailed Frequency Values:**")
+        freq_df = pd.DataFrame(results['emergency_frequency_map'])
+        freq_df.index = [f"Row {i}" for i in range(city_size)]
+        freq_df.columns = [f"Col {j}" for j in range(city_size)]
+        
+        st.dataframe(
+            freq_df.round(2),
+            use_container_width=True,
+            height=300
+        )
 
 else:
     # Show initial instructions
     st.markdown('<h2 class="section-header">🚀 Get Started</h2>', unsafe_allow_html=True)
     st.info("""
     👈 **Configure parameters** in the sidebar and click "Run Optimization" to begin!
+    
+    **New Features:**
+    - **Manual Entry**: Input custom emergency frequency scores (1-10) for each city location
+    - **Quick Fill Options**: Use preset patterns like high center, corner hotspots, or random fill
+    - **Up to 200 generations**: Extended optimization capability
     
     The algorithm will:
     1. Generate random emergency unit locations
@@ -302,3 +430,71 @@ else:
     )
     
     st.plotly_chart(fig_sample, use_container_width=True)
+    
+    # Instructions for manual entry
+    st.markdown('<h3 class="section-header">📝 How to Use Manual Entry</h3>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **Emergency Frequency Scale:**
+        - **1-2**: Very Low (rural areas, low population)
+        - **3-4**: Low (residential suburbs)
+        - **5-6**: Moderate (mixed residential/commercial)
+        - **7-8**: High (busy commercial areas)
+        - **9-10**: Very High (hospitals, schools, downtown)
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Quick Fill Options:**
+        - **Fill All with 5**: Uniform moderate frequency
+        - **Random Fill**: Random distribution (1-10)
+        - **High Center**: Downtown core pattern
+        - **Corner Hotspots**: Multiple activity centers
+        """)
+    
+    # Add example scenarios
+    st.markdown('<h3 class="section-header">🏙️ Example Scenarios</h3>', unsafe_allow_html=True)
+    
+    scenario_col1, scenario_col2, scenario_col3 = st.columns(3)
+    
+    with scenario_col1:
+        st.markdown("""
+        **Urban Downtown**
+        ```
+        3 4 5 6 5 4 3
+        4 6 7 8 7 6 4
+        5 7 9 10 9 7 5
+        6 8 10 10 10 8 6
+        5 7 9 10 9 7 5
+        4 6 7 8 7 6 4
+        3 4 5 6 5 4 3
+        ```
+        """)
+    
+    with scenario_col2:
+        st.markdown("""
+        **Multiple Centers**
+        ```
+        8 3 2 3 8
+        3 2 1 2 3
+        2 1 4 1 2
+        3 2 1 2 3
+        8 3 2 3 8
+        ```
+        """)
+    
+    with scenario_col3:
+        st.markdown("""
+        **Linear Development**
+        ```
+        2 3 4 5 4 3 2
+        2 3 4 5 4 3 2
+        8 9 10 10 10 9 8
+        8 9 10 10 10 9 8
+        2 3 4 5 4 3 2
+        2 3 4 5 4 3 2
+        ```
+        """)
