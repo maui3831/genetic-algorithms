@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from emergency import EmergencyUnitGA
 
-# Page configuration
+# Page metadata configuration
 st.set_page_config(
     page_title="Emergency Unit Location Optimizer",
     page_icon="🚑",
@@ -213,8 +213,7 @@ if st.session_state.results is not None:
         table_data = ga.get_generation_table()
         df = pd.DataFrame(table_data)
         
-        # FIXED: Show ALL generations from 1 to n instead of every 5th
-        display_df = df.copy()  # Show all data instead of sampling
+        display_df = df.copy()  
         
         st.dataframe(
             display_df,
@@ -228,7 +227,7 @@ if st.session_state.results is not None:
             }
         )
         
-        # Download button for full data
+        # Download button for the full results CSV
         csv = df.to_csv(index=False)
         st.download_button(
             label="📥 Download Full Results CSV",

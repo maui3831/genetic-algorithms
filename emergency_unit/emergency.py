@@ -266,8 +266,7 @@ class EmergencyUnitGA:
         )):
             avg_distance = self._calculate_average_response_distance(coords[0], coords[1])
             avg_response_time = self._calculate_response_time(avg_distance)
-            
-            # Format coordinates as requested
+            # Format coordinate text
             coord_text = f"Coordinate ({coords[0]:.3f}, {coords[1]:.3f})"
             
             # Check if this is the last generation (optimized solution)
@@ -276,6 +275,7 @@ class EmergencyUnitGA:
             else:
                 coord_text = f"Coordinate ({coords[0]:.3f}, {coords[1]:.3f})"
             
+            # return the table data for main.py 
             table_data.append({
                 'Generation': gen,
                 'Proposed Coordinates': coord_text,
