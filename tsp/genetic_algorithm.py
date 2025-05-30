@@ -90,7 +90,7 @@ class GeneticAlgorithm:
         # Variables for tracking stagnation
         best_fitness_so_far = float('-inf')
         generations_without_improvement = 0
-        stagnation_limit = 15  
+        stagnation_limit = 50 
         
         for generation in range(self.max_generations):
             new_population = []
