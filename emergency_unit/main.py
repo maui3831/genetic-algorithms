@@ -13,31 +13,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-# st.markdown("""
-# <style>
-#     .main-header {
-#         font-size: 2.5rem;
-#         color: #d63384;
-#         text-align: center;
-#         margin-bottom: 2rem;
-#         font-weight: bold;
-#     }
-#     .section-header {
-#         font-size: 1.5rem;
-#         color: #0d6efd;
-#         margin: 1rem 0;
-#         font-weight: bold;
-#     }
-#     .metric-container {
-#         background-color: #f8f9fa;
-#         padding: 1rem;
-#         border-radius: 0.5rem;
-#         border-left: 4px solid #0d6efd;
-#     }
-# </style>
-# """, unsafe_allow_html=True)
-
 # Main title
 st.markdown('<h1 class="main-header">🚑 Emergency Unit Location Optimizer</h1>', unsafe_allow_html=True)
 
@@ -93,7 +68,6 @@ if st.session_state.results is not None:
             value=f"{results['best_coordinates'][0]:.3f}",
             help="X coordinate of optimal emergency unit location"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
         st.metric(
@@ -101,7 +75,6 @@ if st.session_state.results is not None:
             value=f"{results['best_coordinates'][1]:.3f}",
             help="Y coordinate of optimal emergency unit location"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
     
     with col3:
         st.metric(
@@ -109,7 +82,6 @@ if st.session_state.results is not None:
             value=f"{results['best_cost']:.2f}",
             help="Lowest achieved cost function value"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
     
     with col4:
         avg_response = 1.7 + 3.4 * results['average_response_distance']
@@ -118,13 +90,12 @@ if st.session_state.results is not None:
             value=f"{avg_response:.2f} min",
             help="Average response time to emergencies"
         )
-        st.markdown('</div>', unsafe_allow_html=True)
     
     # Navigation tabs
     tab1, tab2, tab3, tab4 = st.tabs(["📈 Evolution Chart", "🗺️ City Layout", "📋 Generation Table", "🔥 Emergency Hotspots"])
     
     with tab1:
-        st.markdown('<h3 class="section-header">Cost Function Evolution</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 class="section-header">Cost vs Evolution </h3>', unsafe_allow_html=True)
         
         # Create evolution plot
         fig_evolution = go.Figure()
@@ -140,11 +111,6 @@ if st.session_state.results is not None:
         ))
         
         fig_evolution.update_layout(
-            title={
-                'text': 'Genetic Algorithm Convergence',
-                'x': 0.5,
-                'font': {'size': 18, 'color': '#0d6efd'}
-            },
             xaxis_title='Generation',
             yaxis_title='Cost Value',
             hovermode='x unified',
@@ -247,21 +213,18 @@ if st.session_state.results is not None:
         table_data = ga.get_generation_table()
         df = pd.DataFrame(table_data)
         
-        # Show only every 5th generation for readability, plus first and last
-        display_df = df.iloc[::5].copy()
-        if len(df) > 0 and df.index[-1] not in display_df.index:
-            display_df = pd.concat([display_df, df.iloc[[-1]]])
+        # FIXED: Show ALL generations from 1 to n instead of every 5th
+        display_df = df.copy()  # Show all data instead of sampling
         
         st.dataframe(
             display_df,
             use_container_width=True,
             height=400,
             column_config={
-                "Generation": st.column_config.NumberColumn("Gen", width="small"),
-                "X Coordinate": st.column_config.NumberColumn("X", format="%.3f"),
-                "Y Coordinate": st.column_config.NumberColumn("Y", format="%.3f"),
-                "Cost Value": st.column_config.NumberColumn("Cost", format="%.2f"),
-                "Avg Response Time (min)": st.column_config.NumberColumn("Response (min)", format="%.2f")
+                "Generation": st.column_config.NumberColumn("Generation", width="small"),
+                "Proposed Coordinates": st.column_config.TextColumn("Proposed Coordinates", width="medium"),
+                "Cost Value": st.column_config.NumberColumn("Cost Value", format="%.2f"),
+                "Response Time (min)": st.column_config.NumberColumn("Response time(min)", format="%.2f")
             }
         )
         

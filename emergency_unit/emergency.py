@@ -258,7 +258,7 @@ class EmergencyUnitGA:
     
     def get_generation_table(self) -> List[Dict]:
         """
-        Get formatted table data for display
+        Get formatted table data for display with the requested format
         """
         table_data = []
         for i, (gen, cost, coords) in enumerate(zip(
@@ -267,12 +267,20 @@ class EmergencyUnitGA:
             avg_distance = self._calculate_average_response_distance(coords[0], coords[1])
             avg_response_time = self._calculate_response_time(avg_distance)
             
+            # Format coordinates as requested
+            coord_text = f"Coordinate ({coords[0]:.3f}, {coords[1]:.3f})"
+            
+            # Check if this is the last generation (optimized solution)
+            if i == len(self.generation_history) - 1:
+                coord_text = f"Optimized Coordinate ({coords[0]:.3f}, {coords[1]:.3f})"
+            else:
+                coord_text = f"Coordinate ({coords[0]:.3f}, {coords[1]:.3f})"
+            
             table_data.append({
                 'Generation': gen,
-                'X Coordinate': round(coords[0], 3),
-                'Y Coordinate': round(coords[1], 3),
+                'Proposed Coordinates': coord_text,
                 'Cost Value': round(cost, 2),
-                'Avg Response Time (min)': round(avg_response_time, 2)
+                'Response Time (min)': round(avg_response_time, 2)
             })
         
         return table_data
