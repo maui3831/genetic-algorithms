@@ -8,4 +8,6 @@ dependencies = [
     "matplotlib>=3.10.3",
     "numpy>=2.2.6",
     "pygame>=2.6.1",
+    "plotly>=6.1.2",
+    "streamlit>=1.45.1",
 ]
