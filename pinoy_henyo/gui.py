@@ -43,10 +43,12 @@ if st.session_state.game_started and 'secret_word' in st.session_state:
     status_text = st.empty()
     
     # Centered live table
-    st.markdown("<div style='display: flex; justify-content: center;'>", unsafe_allow_html=True)
-    st.markdown("### 🔄 Live Progress")
-    live_table = st.empty()
-    st.markdown("</div>", unsafe_allow_html=True)
+    live_progress_container = st.container()
+    with live_progress_container:
+        st.markdown("<div style='display: flex; justify-content: center;'>", unsafe_allow_html=True)
+        st.markdown("### 🔄 Live Progress")
+        live_table = st.empty()
+        st.markdown("</div>", unsafe_allow_html=True)
     
     generations_data = []
     console_logs = []
@@ -81,16 +83,17 @@ if st.session_state.game_started and 'secret_word' in st.session_state:
         if generation < guesser.max_generations - 1:
             guesser.evolve_generation(game_master)
         
-        time.sleep(0.03)
     
     # Final results
     final_guess = generations_data[-1]['Best Guess']
     final_cost = generations_data[-1]['Cost Value']
     total_generations = len(generations_data)
     
+    # Hide progress and live table
     progress_bar.empty()
     status_text.empty()
     live_table.empty()
+    live_progress_container.empty()
     
     st.markdown("---")
     
@@ -101,24 +104,35 @@ if st.session_state.game_started and 'secret_word' in st.session_state:
     else:
         st.error("❌ Could not guess perfectly")
     
-    # Key Information Grid at Top
-    st.markdown("### 🎯 Results Summary")
-    col1, col2, col3, col4, col5 = st.columns(5)
+    # Final Results Section with Grid Layout
+    st.markdown("### 🏆 Final Results")
+    
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Secret Word", secret.upper())
+        st.metric(
+            label="🎯 Final cost",
+            value=final_cost,
+        )
     
     with col2:
-        st.metric("Final Guess", final_guess.upper())
+        st.metric(
+            label="⭐ Secret Word",
+            value=secret.upper()
+        )
     
     with col3:
-        st.metric("Generations", total_generations)
+        st.metric(
+            label="💡 Best Guess",
+            value=final_guess.upper()
+        )
     
     with col4:
-        st.metric("Best Guess", final_guess.upper())
-    
-    with col5:
-        st.metric("Cost Value", final_cost)
+        st.metric(
+            label="🎲 Match Status",
+            value="Perfect match!" if final_cost == 0 else "Close Match",
+            delta=f"Cost difference: {final_cost}"
+        )
     
     st.markdown("---")
     
