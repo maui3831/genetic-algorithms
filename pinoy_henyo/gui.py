@@ -145,7 +145,7 @@ if st.session_state.game_started and 'secret_word' in st.session_state:
         st.dataframe(df, use_container_width=True, height=400)
     
     with col2:
-        st.markdown("### 📈 Cost Progress Chart")
+        st.markdown("### 📈 Cost Value vs Generation")
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=df['Generation'],
