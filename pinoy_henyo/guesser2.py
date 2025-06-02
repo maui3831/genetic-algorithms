@@ -8,7 +8,7 @@ class Guesser:
     and swap mutation techniques.
     """
     
-    def __init__(self, word_length, population_size=100):
+    def __init__(self, word_length, population_size=300):
         """
         Initialize the Guesser with GA parameters.
         
@@ -18,10 +18,10 @@ class Guesser:
         """
         self.word_length = word_length
         self.population_size = population_size
-        self.max_generations = 100
+        self.max_generations = 500
         
-        self.crossover_probability = 0.6 
-        self.mutation_probability = 0.4   
+        self.crossover_probability = 0.8
+        self.mutation_probability = 0.2
         self.tournament_size = 5          
         
         self.population = self._initialize_population()
